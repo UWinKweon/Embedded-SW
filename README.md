@@ -18,3 +18,5 @@ Python x.x.x
 Raspberry Pi 4 Computer Model B 8GB RAM  
 dc 모터 드라이버 : L298n
 
+## 상세 내용
+<프로젝트 종료 후 Notion 링크(외부인 편집 불가능 모드) 업로드 예정>

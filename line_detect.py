@@ -81,7 +81,7 @@ try:
     degree = line[0][4]
     print(degree)
     cv2.line(ccan, (line[0][0], line[0][1]), (line[0][2], line[0][3]), (0, 0, 255), 3, cv2.LINE_AA)
-    mimg = cv2.addWeighted(img, 1, ccan, 1, 0)
+    mimg = cv2.addWeighted(img, 1, ccan, 0.9, 0)
 except:
     degree = 0
 

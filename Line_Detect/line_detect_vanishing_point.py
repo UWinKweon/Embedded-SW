@@ -63,6 +63,7 @@ def draw_lines(image, lines, color=[255, 0, 0], thickness=2, make_copy=True):
             cv2.line(image, (x1, y1), (x2, y2), color, thickness)
     return image
 
+
 def average_slope_intercept(lines):
     left_lines = []  # (slope, intercept)
     left_weights = []  # (length,)

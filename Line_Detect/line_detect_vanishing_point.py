@@ -70,18 +70,19 @@ def average_slope_intercept(lines):
     right_weights = []  # (length,)
 
     for line in lines:
-        for x1, y1, x2, y2 in line:
-            if x2 == x1:
-                continue  # ignore a vertical line
-            slope = (y2-y1)/(x2-x1)
-            intercept = y1 - slope*x1
-            length = np.sqrt((y2-y1)**2+(x2-x1)**2)
-            if slope < 0:  # y is reversed in image
-                left_lines.append((slope, intercept))
-                left_weights.append((length))
-            else:
-                right_lines.append((slope, intercept))
-                right_weights.append((length))
+        if line is not None:
+            for x1, y1, x2, y2 in line:
+                if x2 == x1:
+                    continue  # ignore a vertical line
+                slope = (y2-y1)/(x2-x1)
+                intercept = y1 - slope*x1
+                length = np.sqrt((y2-y1)**2+(x2-x1)**2)
+                if slope < 0:  # y is reversed in image
+                    left_lines.append((slope, intercept))
+                    left_weights.append((length))
+                else:
+                    right_lines.append((slope, intercept))
+                    right_weights.append((length))
 
     # add more weight to longer lines
     left_lane = np.dot(left_weights,  left_lines) / \
@@ -135,21 +136,22 @@ def FilterLines(Lines):
     FinalLines = []
 
     for Line in Lines:
-        [[x1, y1, x2, y2]] = Line
+        if Line is not None:
+            [[x1, y1, x2, y2]] = Line
 
-        # Calculating equation of the line: y = mx + c
-        if x1 != x2:
-            m = (y2 - y1) / (x2 - x1)
-        else:
-            m = 100000000
-        c = y2 - m*x2
-        # theta will contain values between -90 ~ +90.
-        theta = math.degrees(math.atan(m))
+            # Calculating equation of the line: y = mx + c
+            if x1 != x2:
+                m = (y2 - y1) / (x2 - x1)
+            else:
+                m = 100000000
+            c = y2 - m*x2
+            # theta will contain values between -90 ~ +90.
+            theta = math.degrees(math.atan(m))
 
-        # Rejecting lines of slope near to 0 degree or 90 degree and storing others
-        if REJECT_DEGREE_TH <= abs(theta) <= (90 - REJECT_DEGREE_TH):
-            l = math.sqrt((y2 - y1)**2 + (x2 - x1)**2)    # length of the line
-            FinalLines.append([x1, y1, x2, y2, m, c, l])
+            # Rejecting lines of slope near to 0 degree or 90 degree and storing others
+            if REJECT_DEGREE_TH <= abs(theta) <= (90 - REJECT_DEGREE_TH):
+                l = math.sqrt((y2 - y1)**2 + (x2 - x1)**2)    # length of the line
+                FinalLines.append([x1, y1, x2, y2, m, c, l])
 
     # Removing extra lines
     # (we might get many lines, so we are going to take only longest 15 lines
@@ -161,7 +163,6 @@ def FilterLines(Lines):
         FinalLines = FinalLines[:15]
 
     return FinalLines
-
 
 def GetVanishingPoint(Lines):
     # We will apply RANSAC inspired algorithm for this. We will take combination
@@ -209,17 +210,15 @@ class LaneDetector:
         self.right_lines = deque(maxlen=QUEUE_LENGTH)
 
     def process(self, image):
-        white_yellow = select_white_yellow(image)
-        gray = cv2.cvtColor(white_yellow, cv2.COLOR_RGB2GRAY)
-        smooth_gray = cv2.GaussianBlur(
-            gray, (15, 15), 0)     # Kernel size = 15
-        edges = cv2.Canny(smooth_gray, 15, 150)
-        regions = select_region(edges)
-        lines = cv2.HoughLinesP(
-            regions, rho=1, theta=np.pi/180, threshold=20, minLineLength=20, maxLineGap=300)
-        line_for_van = FilterLines(lines)
-        VanishingPoint = GetVanishingPoint(line_for_van)
-        left_line, right_line = lane_lines(image, lines)
+        white_yellow            = select_white_yellow(image)
+        gray                    = cv2.cvtColor(white_yellow, cv2.COLOR_RGB2GRAY)
+        smooth_gray             = cv2.GaussianBlur(gray, (15, 15), 0)     # Kernel size = 15
+        edges                   = cv2.Canny(smooth_gray, 15, 150)
+        regions                 = select_region(edges)
+        lines                   = cv2.HoughLinesP(regions, rho=1, theta=np.pi/180, threshold=20, minLineLength=20, maxLineGap=300)
+        line_for_van            = FilterLines(lines)
+        VanishingPoint          = GetVanishingPoint(line_for_van)
+        left_line, right_line   = lane_lines(image, lines)
 
         if VanishingPoint is None:
             print("Vanishing Point not found. Possible reason is that not enough lines are found in the image for determination of vanishing point.")
@@ -242,7 +241,6 @@ class LaneDetector:
 
         return draw_lane_lines(image, (left_line, right_line))
 
-
 def process_video(video_input, video_output):
     detector = LaneDetector()
 
@@ -250,7 +248,6 @@ def process_video(video_input, video_output):
     processed = clip.fl_image(detector.process)
     processed.write_videofile(os.path.join('C:/Users/yoosk/Documents/GitHub/Embedded-SW/Line_Detect/output_videos', video_output), audio=False)
 
-# process_video(cv2.VideoCapture(0), 'white.mp4')
 process_video('solidWhiteRight.mp4', 'white.mp4')
 process_video('solidYellowLeft.mp4', 'yellow.mp4')
 process_video('challenge.mp4', 'extra.mp4')

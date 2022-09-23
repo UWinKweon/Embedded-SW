@@ -9,7 +9,6 @@ import math
 # Threshold by which lines will be rejected wrt the horizontal
 REJECT_DEGREE_TH = 4.0
 
-
 def select_white_yellow(image):
     converted = cv2.cvtColor(image, cv2.COLOR_RGB2HLS)
     # white color mask
@@ -24,7 +23,6 @@ def select_white_yellow(image):
     mask = cv2.bitwise_or(white_mask, yellow_mask)
     return cv2.bitwise_and(image, image, mask=mask)
 
-
 def filter_region(image, vertices):
     """
     Create the mask using the vertices and apply it to the input image
@@ -36,7 +34,6 @@ def filter_region(image, vertices):
         # in case, the input image has a channel dimension
         cv2.fillPoly(mask, vertices, (255,)*mask.shape[2])
     return cv2.bitwise_and(image, mask)
-
 
 def select_region(image):
     """
@@ -52,7 +49,6 @@ def select_region(image):
     vertices = np.array(
         [[bottom_left, top_left, top_right, bottom_right]], dtype=np.int32)
     return filter_region(image, vertices)
-
 
 def draw_lines(image, lines, color=[255, 0, 0], thickness=2, make_copy=True):
     # the lines returned by cv2.HoughLinesP has the shape (-1, 1, 4)

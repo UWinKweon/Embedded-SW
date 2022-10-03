@@ -65,7 +65,11 @@ def FilterLines(Lines):
        
     if len(cntLines) != 0:
         cntLines = sorted(cntLines, key=lambda x: x[-1], reverse=True)
-        cntLines = cntLines[0]
+        if cntLines[0][-1] > 150:
+            cntLines = cntLines[0]
+        else:
+            cntLines = []
+
     return FinalLines, cntLines
 
 
@@ -169,7 +173,7 @@ def draw_lane_lines(image, lines, color=[255, 0, 0], thickness=15):
     return line_image
 
 
-video_capture = cv2.VideoCapture(1)         # webcam size : 480x640
+video_capture = cv2.VideoCapture(0)         # webcam size : 480x640
 
 flag = 0
 cnt = 0
@@ -196,13 +200,15 @@ while video_capture.isOpened():
 
         line_image = draw_lane_lines(frame, (left_line, right_line))
         cv2.imshow('Add lines', cv2.addWeighted(frame, 1.0, line_image, 0.95, 0.0))
+
         if len(line_for_cnt) == 0:
-            flag = 0
-        elif (flag == 0 and line_for_cnt[6] > 200):
-            cnt = cnt + 1
             flag = 1
-            # print(cnt, flag, "\n")
-            # print(line_for_cnt[-1], "\n\n")
+        elif (flag == 1 and line_for_cnt[-1] > 200):
+            flag = 0
+            cnt = cnt + 1
+            
+            print(cnt, flag, "\n")
+            print(line_for_cnt[-1], "\n\n")
 
     cv2.imshow('original', frame)
     cv2.imshow('result', regions)

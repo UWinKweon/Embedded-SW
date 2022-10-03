@@ -87,6 +87,27 @@ def FilterLines(Lines):
     return FinalLines, cntLines
 
 
+def getVanishingPoint(leftLine, rightLine):
+    VanishingPoint = None
+    MinError = 100000000000
+
+    x1_l, y1_l, x2_l, y2_l = leftLine[0][0], leftLine[0][1], leftLine[1][0], leftLine[1][1]
+    x1_r, y1_r, x2_r, y2_r = rightLine[0][0], rightLine[0][1], rightLine[1][0], rightLine[1][1]
+
+    m1 = (y2_l - y1_l)/(x2_l - x1_l)
+    m2 = (y2_r - y1_r)/(x2_r - x1_r)
+    c1 = y1_l - m1 * x1_l
+    c2 = y1_r - m2 * x1_r
+
+    x0 = (c1 - c2) / (m2 - m1)
+    y0 = m1 * x0 + c1
+
+
+
+
+
+
+
 def GetVanishingPoint(Lines):
     VanishingPoint = None
     MinError = 100000000000
@@ -155,6 +176,8 @@ def average_slope_intercept(lines):
 
 
 def make_line_points(y1, y2, line):     # 각 line의 양 끝점 좌표값 반환/lane_lines()에서 호출
+    points = []                         #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
     if line is None:
         return None
 
@@ -166,7 +189,9 @@ def make_line_points(y1, y2, line):     # 각 line의 양 끝점 좌표값 반�
         x2 = int((y2 - intercept)/slope)
         y1 = int(y1)
         y2 = int(y2)
-        return ((x1, y1), (x2, y2))
+        points = [[x1,y1],[x2,y2]]      #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        return points                   #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        # return ((x1, y1), (x2, y2))
     else:
         return None
 
@@ -204,8 +229,7 @@ video_capture = cv2.VideoCapture(0)
 flag = 0
 cnt = 0
 
-while video_capture.isOpened():
-    # webcam size : 480x640
+while video_capture.isOpened():                                 # webcam size : 480x640
     success, frame = video_capture.read()
     if not success:
         break
@@ -214,41 +238,35 @@ while video_capture.isOpened():
     # input : webcam 영상/output : while/yellow 부분만 남김
     white_yellow = select_white_yellow(frame)
     gray = cv2.cvtColor(white_yellow, cv2.COLOR_RGB2GRAY)       # grayscale로 변환
-    smooth_gray = cv2.GaussianBlur(
-        gray, (15, 15), 0)           # Gaussian smoothing
-    # Edge detection
-    edges = cv2.Canny(smooth_gray, 15, 150)
+    smooth_gray = cv2.GaussianBlur(gray, (15, 15), 0)           # Gaussian smoothing
+    edges = cv2.Canny(smooth_gray, 15, 150)                     # Edge detection
     regions = select_region_line(edges)                         # 관심구역 설정
     # cv2.HoughLinesP(input image(1 channel binary scale), 거리 측정 해상도, 각도(rad), 직선으로 판단할 최소한의 동일 개수, line_length_min, line_length_max)
-    # output : 양끝 좌표값 [x1,y1,x2,y2]
-    lines = cv2.HoughLinesP(regions, rho=1, theta=np.pi /
-                            180, threshold=20, minLineLength=100, maxLineGap=300)
+    lines = cv2.HoughLinesP(regions, rho=1, theta=np.pi / 180, threshold=20, minLineLength=100, maxLineGap=300)     # output : 양끝 좌표값 [x1,y1,x2,y2]
     if lines is not None:
-        line_for_van, line_for_cnt = FilterLines(
-            lines)         # detected line의 좌표를 배열(15) 저장
-        # Vanishing point [x0,y0] 구하기
-        VanishingPoint = GetVanishingPoint(line_for_van)
+        line_for_van, line_for_cnt = FilterLines(lines)         # detected line의 좌표를 배열(15) 저장
+        left_line, right_line = lane_lines(regions, lines)      # line의 양 끝점 ((x1,y1),(x2,y2)) 좌표값
+        
+        print(left_line, "\n")
+        print(left_line[0][0],"\n")
+        
+        VanishingPoint = getVanishingPoint(left_line,right_line)
+        # VanishingPoint = GetVanishingPoint(line_for_van)        # Vanishing point [x0,y0] 구하기
         if VanishingPoint is not None:
-            cv2.circle(regions, (int(VanishingPoint[0]), int(
-                VanishingPoint[1])), 8, (255, 0, 0), -1)       # 소실점 원으로 표시
-            cv2.putText(regions, "x : %d, y : %d" % (int(VanishingPoint[0]), int(
-                VanishingPoint[1])), (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255))        # 소실점 좌표값 출력
-
-        # line의 양 끝점 ((x1,y1),(x2,y2)) 좌표값
-        left_line, right_line = lane_lines(regions, lines)
+            cv2.circle(regions, (int(VanishingPoint[0]), int(VanishingPoint[1])), 8, (255, 0, 0), -1)       # 소실점 원으로 표시
+            cv2.putText(regions, "x : %d, y : %d" % (int(VanishingPoint[0]), int(VanishingPoint[1])), (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255))        # 소실점 좌표값 출력
 
         # input image에 최종 line 그리기
         line_image = draw_lane_lines(frame, (left_line, right_line))
-        cv2.imshow('Add lines', cv2.addWeighted(
-            frame, 1.0, line_image, 0.95, 0.0))
+        cv2.imshow('Add lines', cv2.addWeighted(frame, 1.0, line_image, 0.95, 0.0))
         if len(line_for_cnt) == 0:
             flag = 0
-            print(flag, 'There is no detected line')
+            # print(flag, 'There is no detected line')
         elif (flag == 0 and line_for_cnt[6] > 200):
             cnt = cnt + 1
             flag = 1
-            print(cnt, flag, "\n")
-            print(line_for_cnt[-1], "\n\n")
+            # print(cnt, flag, "\n")
+            # print(line_for_cnt[-1], "\n\n")
 
     cv2.imshow('original', frame)
     cv2.imshow('result', regions)
